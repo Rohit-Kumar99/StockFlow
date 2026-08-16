@@ -35,7 +35,11 @@ export default function Dashboard() {
           api.get('/inventory/low-stock'),
         ]);
         setSummary(summaryRes.data);
-        setLowStock(lowStockRes.data.slice(0, 5));
+        // Handle both old format (array) and new format (object with pagination)
+        const lowStockData = Array.isArray(lowStockRes.data) 
+          ? lowStockRes.data 
+          : lowStockRes.data.lowStock || [];
+        setLowStock(lowStockData.slice(0, 5));
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard');
       } finally {
@@ -46,6 +50,7 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return <LoadingSpinner message="Loading dashboard..." />;
+  if (error) return <Alert type="error" message={error} />;
 
   return (
     <div>

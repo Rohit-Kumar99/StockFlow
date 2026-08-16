@@ -22,7 +22,7 @@ export default function Products() {
     supplier: '',
     unitPrice: '',
     costPrice: '',
-    minStockLevel: '5',
+    minStockLevel: '',
   });
 
   const search = searchParams.get('search') || '';
@@ -47,12 +47,57 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
-    api.get('/categories').then((r) => setCategories(r.data)).catch(() => {});
-    if (isAdmin) api.get('/suppliers').then((r) => setSuppliers(r.data)).catch(() => {});
-  }, [search, category, stockStatus, isAdmin]);
+  }, [search, category, stockStatus]);
+
+  // Fetch categories once on mount
+  useEffect(() => {
+    api.get('/categories')
+      .then((r) => setCategories(r.data))
+      .catch(() => setError('Failed to load categories'));
+  }, []);
+
+  // Fetch suppliers when isAdmin changes
+  useEffect(() => {
+    if (isAdmin) {
+      api.get('/suppliers')
+        .then((r) => setSuppliers(r.data))
+        .catch(() => setError('Failed to load suppliers'));
+    }
+  }, [isAdmin]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!form.name.trim()) {
+      setError('Product name is required');
+      return;
+    }
+    if (!form.sku.trim()) {
+      setError('SKU is required');
+      return;
+    }
+    if (!form.category) {
+      setError('Category is required');
+      return;
+    }
+    if (!form.supplier) {
+      setError('Supplier is required');
+      return;
+    }
+    if (!form.unitPrice || parseFloat(form.unitPrice) <= 0) {
+      setError('Unit price must be greater than 0');
+      return;
+    }
+    if (!form.costPrice || parseFloat(form.costPrice) <= 0) {
+      setError('Cost price must be greater than 0');
+      return;
+    }
+    if (!form.minStockLevel || parseInt(form.minStockLevel, 10) < 1) {
+      setError('Minimum stock level must be at least 1');
+      return;
+    }
+
     try {
       await api.post('/products', {
         ...form,
@@ -61,7 +106,7 @@ export default function Products() {
         minStockLevel: parseInt(form.minStockLevel, 10),
       });
       setShowForm(false);
-      setForm({ name: '', sku: '', category: '', supplier: '', unitPrice: '', costPrice: '', minStockLevel: '5' });
+      setForm({ name: '', sku: '', category: '', supplier: '', unitPrice: '', costPrice: '', minStockLevel: '' });
       fetchProducts();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create product');

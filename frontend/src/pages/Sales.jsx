@@ -44,6 +44,30 @@ export default function Sales() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    
+    // Validate that at least one item is present with valid data
+    if (!form.items || form.items.length === 0) {
+      setError('At least one item is required');
+      return;
+    }
+
+    for (let i = 0; i < form.items.length; i++) {
+      const item = form.items[i];
+      if (!item.product) {
+        setError(`Please select a product for item ${i + 1}`);
+        return;
+      }
+      const quantity = parseInt(item.quantity, 10);
+      if (!item.quantity || quantity < 1) {
+        setError(`Quantity for item ${i + 1} must be at least 1`);
+        return;
+      }
+      if (!item.unitPrice || parseFloat(item.unitPrice) <= 0) {
+        setError(`Unit price for item ${i + 1} must be greater than 0`);
+        return;
+      }
+    }
+
     try {
       await api.post('/sales', {
         items: form.items.map((i) => ({

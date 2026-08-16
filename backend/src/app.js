@@ -14,7 +14,19 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+// Validate CORS origin URL
+const getValidCorsOrigin = () => {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  try {
+    new URL(clientUrl);
+    return clientUrl;
+  } catch (err) {
+    console.warn(`Invalid CLIENT_URL: "${clientUrl}", using default: http://localhost:5173`);
+    return 'http://localhost:5173';
+  }
+};
+
+app.use(cors({ origin: getValidCorsOrigin(), credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -30,6 +42,11 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+
+// 404 handler - must be after all route definitions
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 app.use(errorHandler);
 

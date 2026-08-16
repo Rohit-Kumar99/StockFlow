@@ -46,7 +46,8 @@ export function AuthProvider({ children }) {
       try {
         const { data } = await api.get('/auth/me');
         dispatch({ type: 'SET_USER', payload: data });
-      } catch {
+      } catch (err) {
+        console.error('Failed to load user:', err.response?.data?.message || err.message);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         dispatch({ type: 'LOGOUT' });

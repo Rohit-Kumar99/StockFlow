@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const PurchaseOrder = require('../models/PurchaseOrder');
 const InventoryMovement = require('../models/InventoryMovement');
 const logAudit = require('../utils/auditLogger');
@@ -56,20 +57,15 @@ const createPurchaseOrder = async (req, res, next) => {
 };
 
 const updatePurchaseOrderStatus = async (req, res, next) => {
-  const session = await PurchaseOrder.db.startSession();
-  session.startTransaction();
-
   try {
     const { status } = req.body;
-    const order = await PurchaseOrder.findById(req.params.id).session(session);
+    const order = await PurchaseOrder.findById(req.params.id);
 
     if (!order) {
-      await session.abortTransaction();
       return res.status(404).json({ message: 'Purchase order not found' });
     }
 
     if (!PurchaseOrder.canTransition(order.status, status)) {
-      await session.abortTransaction();
       return res.status(400).json({
         message: `Invalid status transition from '${order.status}' to '${status}'`,
       });
@@ -86,23 +82,18 @@ const updatePurchaseOrderStatus = async (req, res, next) => {
       order.receivedAt = new Date();
 
       for (const item of order.items) {
-        await InventoryMovement.create(
-          [
-            {
-              product: item.product,
-              type: 'purchase',
-              quantity: item.quantity,
-              reason: 'Purchase order received',
-              reference: order.poNumber,
-              performedBy: req.user._id,
-            },
-          ],
-          { session }
-        );
+        await InventoryMovement.create({
+          product: item.product,
+          type: 'purchase',
+          quantity: item.quantity,
+          reason: 'Purchase order received',
+          reference: order.poNumber,
+          performedBy: req.user._id,
+        });
       }
     }
 
-    await order.save({ session });
+    await order.save();
 
     await logAudit({
       action: 'status_change',
@@ -112,8 +103,6 @@ const updatePurchaseOrderStatus = async (req, res, next) => {
       details: `Status changed from ${previousStatus} to ${status}`,
     });
 
-    await session.commitTransaction();
-
     const populated = await PurchaseOrder.findById(order._id)
       .populate('supplier', 'name')
       .populate('createdBy', 'name')
@@ -122,10 +111,7 @@ const updatePurchaseOrderStatus = async (req, res, next) => {
 
     res.json(populated);
   } catch (err) {
-    await session.abortTransaction();
     next(err);
-  } finally {
-    session.endSession();
   }
 };
 

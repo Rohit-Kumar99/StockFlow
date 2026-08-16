@@ -63,6 +63,10 @@ const createAdjustment = async (req, res, next) => {
 
 const getLowStock = async (req, res, next) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit, 10) || 20);
+    const skip = (page - 1) * limit;
+
     const products = await Product.find({ isActive: true })
       .populate('category', 'name')
       .populate('supplier', 'name');
@@ -77,7 +81,15 @@ const getLowStock = async (req, res, next) => {
       .filter((p) => p.currentStock <= p.minStockLevel)
       .sort((a, b) => a.currentStock - b.currentStock);
 
-    res.json(lowStock);
+    const total = lowStock.length;
+    const paginatedLowStock = lowStock.slice(skip, skip + limit);
+
+    res.json({ 
+      lowStock: paginatedLowStock,
+      page, 
+      pages: Math.ceil(total / limit), 
+      total 
+    });
   } catch (err) {
     next(err);
   }

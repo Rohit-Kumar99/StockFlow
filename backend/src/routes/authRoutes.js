@@ -7,13 +7,15 @@ const validate = require('../middleware/validateMiddleware');
 
 const router = express.Router();
 
-const registerHandler = async (req, res, next) => {
+// Middleware: Allow first registration (admin creation), then require auth for subsequent registrations
+const allowFirstRegisterOnly = async (req, res, next) => {
   try {
     const count = await User.countDocuments();
+    // If users exist, require authentication; otherwise allow open registration
     if (count > 0) {
-      return protect(req, res, () => register(req, res, next));
+      return protect(req, res, next);
     }
-    return register(req, res, next);
+    next();
   } catch (err) {
     next(err);
   }
@@ -28,7 +30,8 @@ router.post(
     body('role').optional().isIn(['admin', 'staff']),
   ],
   validate,
-  registerHandler
+  allowFirstRegisterOnly,
+  register
 );
 
 router.post(

@@ -25,6 +25,7 @@ export default function PurchaseOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
   const [form, setForm] = useState({ supplier: '', items: [{ product: '', quantity: 1, unitCost: '' }] });
 
   const fetchOrders = async () => {
@@ -74,11 +75,14 @@ export default function PurchaseOrders() {
   };
 
   const updateStatus = async (id, status) => {
+    setUpdatingId(id);
     try {
       await api.put(`/purchase-orders/${id}/status`, { status });
       fetchOrders();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -190,7 +194,10 @@ export default function PurchaseOrders() {
                     <button
                       key={next}
                       onClick={() => updateStatus(order._id, next)}
+                      disabled={updatingId === order._id}
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
+                        updatingId === order._id ? 'opacity-50 cursor-not-allowed' : ''
+                      } ${
                         next === 'cancelled'
                           ? 'border border-red-200 text-red-600 hover:bg-red-50'
                           : next === 'received'
@@ -198,7 +205,7 @@ export default function PurchaseOrders() {
                           : 'bg-indigo-600 text-white hover:bg-indigo-700'
                       }`}
                     >
-                      Mark as {next}
+                      {updatingId === order._id ? 'Updating...' : `Mark as ${next}`}
                     </button>
                   ))}
                 </div>

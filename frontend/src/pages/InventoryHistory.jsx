@@ -52,10 +52,26 @@ export default function InventoryHistory() {
 
   const handleAdjust = async (e) => {
     e.preventDefault();
+    
+    // Validate adjustment form
+    if (!adjustForm.product) {
+      setError('Product is required');
+      return;
+    }
+    const quantity = parseInt(adjustForm.quantity, 10);
+    if (!adjustForm.quantity || quantity < 1) {
+      setError('Quantity must be at least 1');
+      return;
+    }
+    if (!adjustForm.reason.trim()) {
+      setError('Reason is required');
+      return;
+    }
+
     try {
       await api.post('/inventory/adjustments', {
         ...adjustForm,
-        quantity: parseFloat(adjustForm.quantity),
+        quantity: parseInt(adjustForm.quantity, 10),
       });
       setShowAdjust(false);
       setAdjustForm({ product: '', quantity: '', reason: '', type: 'adjustment' });

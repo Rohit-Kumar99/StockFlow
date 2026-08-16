@@ -15,10 +15,45 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!form.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (form.name.trim().length < 2) {
+      setError('Name must be at least 2 characters');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    if (!emailRegex.test(form.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
+    if (!form.password) {
+      setError('Password is required');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    
+    if (!form.confirmPassword) {
+      setError('Please confirm your password');
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+    
     setError('');
     setSubmitting(true);
     try {
@@ -31,7 +66,7 @@ export default function Register() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-indigo-50 to-slate-100 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-indigo-600">StockFlow</h1>
